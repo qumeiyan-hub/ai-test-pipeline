@@ -36,6 +36,15 @@ jobs:
       - name: 创建报告目录
         run: mkdir -p reports
 
+      - name: 恢复登录会话
+        run: |
+          if [ -n "${{ secrets.SESSION_STATE }}" ]; then
+            echo '${{ secrets.SESSION_STATE }}' > session_state.json
+            echo "✅ 登录会话已从 Secret 恢复"
+          else
+            echo "⚠️ 未配置 SESSION_STATE，跳过登录后测试"
+          fi
+
       - name: 运行自动化测试
         run: pytest tests/ -v --html=reports/report.html --self-contained-html
         continue-on-error: true

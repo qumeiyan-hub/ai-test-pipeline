@@ -1,0 +1,57 @@
+name: AI 辅助自动化测试流水线
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 每天北京时间 09:00 自动执行
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+    # 支持手动触发
+
+jobs:
+  test:
+    name: 自动化测试
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 安装 Python 依赖
+        run: pip install -r requirements.txt
+
+      - name: 安装 Playwright 浏览器
+        run: playwright install chromium --with-deps
+
+      - name: 创建报告目录
+        run: mkdir -p reports
+
+      - name: 运行自动化测试
+        run: pytest tests/ -v --html=reports/report.html --self-contained-html
+        continue-on-error: true
+
+      - name: 上传测试报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report-${{ github.run_number }}
+          path: reports/
+          retention-days: 30
+
+      - name: 输出测试摘要
+        if: always()
+        run: |
+          echo "## 测试执行完成" >> $GITHUB_STEP_SUMMARY
+          echo "- 触发分支: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 执行时间: $(date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_STEP_SUMMARY
+          echo "- 报告已上传至 Artifacts，可在 Actions 页面下载" >> $GITHUB_STEP_SUMMARY

@@ -37,12 +37,14 @@ jobs:
         run: mkdir -p reports
 
       - name: 恢复登录会话
+        env:
+          SESSION_STATE_B64: ${{ secrets.SESSION_STATE_B64 }}
         run: |
-          if [ -n "${{ secrets.SESSION_STATE }}" ]; then
-            echo '${{ secrets.SESSION_STATE }}' > session_state.json
+          if [ -n "$SESSION_STATE_B64" ]; then
+            echo "$SESSION_STATE_B64" | base64 --decode > session_state.json
             echo "✅ 登录会话已从 Secret 恢复"
           else
-            echo "⚠️ 未配置 SESSION_STATE，跳过登录后测试"
+            echo "⚠️ 未配置 SESSION_STATE_B64，跳过登录后测试"
           fi
 
       - name: 运行自动化测试
